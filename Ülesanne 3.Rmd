@@ -1,0 +1,102 @@
+---
+title: "ÜLESANNE 3. Graafiteooria"
+
+subtitle: "NTR0390 Algoritmid ja andmestruktuurid. Moodul GRAAFID"
+
+author: "<br>õpilane Toomas Kirsing <br>"
+
+date: "07.10.2022 <br>"
+
+
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: 
+      collapsed: true
+    number_sections: false
+    theme: default
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(igraph)
+library(network)
+```
+
+# Ülesanne 1
+
+### Graafi moodustamine 
+
+Üliõpilaskoodist (212452) a=4, b=5, c=2
+
+```{r, message=FALSE, warning=FALSE}
+RNGkind(sample.kind = "Rounding") 
+set.seed(212452)
+a = 4
+b = 5
+c = 2
+g = erdos.renyi.game(a+b+c, 0.5)
+w = as.integer(runif(ecount(g),1,100))
+E(g)$weight = w
+plot(g,edge.label=E(g)$weight,layout=layout_in_circle)
+```
+
+### Kruskali minimaalse kaaluga aluspuu
+
+### mst() minimaalse kaaluga aluspuu
+```{r, message=FALSE, warning=FALSE}
+puu<-mst(g, weights = E(g)$weight)
+plot(puu,layout=layout_as_tree,edge.label=E(puu)$weight)
+```
+# Ülesanne 2
+
+### Ruudustik-graaf G
+
+```{r, message=FALSE, warning=FALSE}
+n <- a+b+c
+maze1 <- graph.lattice(c(n,n))
+plot(maze1,layout=layout_on_grid,vertex.size=5)
+```
+
+### Labürindi loomine
+
+```{r, message=FALSE, warning=FALSE}
+RNGkind(sample.kind= "Rounding") 
+set.seed(212452)
+weights <- as.integer(runif(ecount(maze1),0,n*n))
+E(maze1)$weight<-weights
+puu<-mst(maze1, weights = E(maze1)$weight)
+plot(puu,layout=layout_on_grid,vertex.size=5,edge.color='black',edge.width=3)
+```
+
+### Lahendus
+
+```{r, message=FALSE, warning=FALSE}
+#sp = get.shortest.paths(puu,E(maze1))$vpath
+#E(puu, path=sp)$color <- 'red'
+#plot(puu,add=TRUE, layout=layout_on_grid,edge.width=3,vertex.size=5)
+```
+
+# Ülesanne 3
+
+### Esimene väljapääs
+
+```{r message=FALSE, warning=FALSE}
+#BFS = bfs(puu, 1, father=TRUE)
+#otspunktid <- as.vector(rbind(BFS$father[-1],(2:n)))
+#ei <- get.edge.ids(puu, otspunktid)
+#E(puu)$color <- "grey"
+#E(puu)$width <- 1
+#E(puu)[ei]$color <- BFS$father[-1]
+#E(puu)[ei]$width <-3
+#k <- 1
+#for(i in unique(BFS$father[BFS$order[-1]])){
+#    cat("step", k, "from nr", i," \n")
+#    k <- k+1
+#    print(E(puu)[ei][which(BFS$father[-1]==i)])}
+#plot(puu,add=TRUE, layout=layout_on_grid,edge.width=3,vertex.size=5)
+```
+
+# Kasutatud allikad
+
+* Moodle materjalid

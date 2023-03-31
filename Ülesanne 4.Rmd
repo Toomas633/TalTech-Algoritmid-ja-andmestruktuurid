@@ -1,0 +1,110 @@
+---
+title: "ÜLESANNE 4. Graafiteooria"
+
+subtitle: "NTR0390 Algoritmid ja andmestruktuurid. Moodul GRAAFID"
+
+author: "<br>õpilane Toomas Kirsing <br>"
+
+date: "04.11.2022 <br>"
+
+
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: 
+      collapsed: true
+    number_sections: false
+    theme: default
+---
+
+```{r, message=FALSE, warning=FALSE}
+if (!"BiocManager" %in% rownames(installed.packages()))
+    install.packages("BiocManager", repos = "https://cran.r-project.org")
+    .bioc_packages <- c("RBGL")
+    BiocManager::install(.bioc_packages)
+library(RBGL)
+library(igraph)
+library(sf)
+library(ggplot2)
+library(stringr)
+```
+
+# Ülesanne
+
+### Graafi moodustamine 
+
+Üliõpilaskoodist (212452) a=2
+
+```{r, message=FALSE, warning=FALSE}
+a = 2
+RNGkind(sample.kind = "Rounding") 
+set.seed(212452)
+g<-erdos.renyi.game(round(a/2)+8, 0.6)
+plot(g,layout=layout_in_circle)
+```
+
+### Planaarsuse kontroll
+
+```{r message=FALSE, warning=FALSE}
+boyerMyrvoldPlanarityTest(as_graphnel(g))
+```
+Graaf ei ole planaarne
+
+```{r message=FALSE, warning=FALSE}
+#G <- contract(g, c(1,2,3,4,5,6,7,8,9,10), vertex.attr.comb=toString)
+#plot(simplify(G),layout=layout_in_circle)
+```
+Viskab errori:
+```{r message=FALSE, warning=FALSE}
+#Quitting from lines 52-54 (Ülesanne-4.Rmd) 
+#Error in contract(g, c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10), vertex.attr.comb = toString) : 
+#  At core/operators/contract.c:77 : Invalid mapping vector length, Invalid value
+#Calls: <Anonymous> ... eval_with_user_handlers -> eval -> eval -> contract
+#In addition: Warning messages:
+#1: package(s) not installed when version(s) same as or greater than current; use
+#  `force = TRUE` to re-install: 'RBGL' 
+```
+
+### Graafi tippude värvimine
+
+```{r message=FALSE, warning=FALSE}
+V(g)$name <- c(1:10)
+col <- rep("white",length(V(g)))
+col[largest_ivs(g)[[1]]] <- 2
+i = 3
+g1 <- g
+while(length(g1) > 0){
+  g2 <- g1
+  g2 <- delete.vertices(g1, V(g1)[(V(g1)%in%largest_ivs(g1)[[1]])])
+  col[V(g)$name%in%largest_ivs(g1)[[1]]$name] <- i
+  g1 <- g2
+  i = i+1
+}
+plot(g,vertex.color=col,layout=layout_in_circle)
+```
+
+### Kromaatiline arv
+
+```{r message=FALSE, warning=FALSE}
+max(greedy_vertex_coloring(g))
+```
+
+# Boonusülesanne
+```{r message=FALSE, warning=FALSE}
+download.file("https://geoportaal.maaamet.ee/docs/haldus_asustus/maakond_shp.zip",destfile="maakond_shp.zip")
+unzip("maakond_shp.zip")
+county <- st_read(list.files(pattern = ".shp")[1])
+county_smpl <- st_simplify(county, preserveTopology = T, dTolerance = 200)
+ggplot()+geom_sf(data = county_smpl)
+county$MNIMI <- str_replace(county$MNIMI, " maakond", "")
+ggplot(data = county_smpl)+
+geom_sf(aes(fill = MNIMI))+
+geom_sf_text(aes(label = MNIMI), colour="grey50")+
+guides(fill= "none")+
+theme(axis.title.x=element_blank(),axis.title.y=element_blank())
+```
+
+# Kasutatud allikad
+
+* Moodle materjalid

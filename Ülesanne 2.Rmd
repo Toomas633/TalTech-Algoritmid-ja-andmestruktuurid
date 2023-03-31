@@ -1,0 +1,133 @@
+---
+title: "ÜLESANNE 2. Graafiteooria"
+
+subtitle: "NTR0390 Algoritmid ja andmestruktuurid. Moodul GRAAFID"
+
+author: "<br>õpilane Toomas Kirsing <br>"
+
+date: "07.10.2022 <br>"
+
+
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: 
+      collapsed: true
+    number_sections: false
+    theme: default
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(igraph)
+library(network)
+```
+
+# Orienteerimata graaf G
+
+### Graafi moodustamine 
+
+Esitan üliõpilaskoodi (212452) 2nd süsteemis
+
+```{r, message=FALSE, warning=FALSE}
+library(R.utils)
+a <- as.integer(unlist(strsplit(intToBin(212452),split="")))
+```
+
+Sisestan maatriksi ***K*** read ülesandes antud eeskirja järgi
+
+```{r}
+row1 <- c(0,a[1],a[2],a[3],a[4],a[5])
+row2 <- c(a[1],0,a[6],a[7],a[8],a[9])
+row3 <- c(a[2],a[6],0,a[10],a[11],a[12])
+row4 <- c(a[3],a[7],a[10],0,a[13],a[14])
+row5 <- c(a[4],a[8],a[11],a[13],0,a[15])
+row6 <- c(a[5],a[9],a[12],a[14],a[15],0)
+matrK <- rbind(row1,row2,row3,row4,row5,row6)
+matrK
+```
+
+Moodustan naabrusraafi ***G*** funktsiooni ***graph_from_adjacency_matrix()*** abil ja joonestan funktsiooniga ***plot()***:
+
+```{r, out.width='80%', fig.align='center'}
+matrG <- graph_from_adjacency_matrix(matrK)
+plot(matrG,layout=layout_in_circle, edge.curved=0.2,edge.color="black")
+```
+
+### Kaalutud graaf
+
+```{r, message=FALSE, warning=FALSE}
+RNGkind(sample.kind="Rounding")
+set.seed(212452)
+w = as.integer(runif(ecount(matrG),1,10))
+edge.attributes(matrG)$weight = w
+plot(matrG)$weight
+```
+
+# Lühimad teed (Floyd-Warshalli algoritm)
+
+### Algmaatriksid A ja B
+
+```{r, message=FALSE, warning=FALSE}
+A <-as.matrix(matrK)
+A[!row(A)==col(A)] <- 100
+A[ends(matrG, E(matrG))] <- E(matrG)$weight
+A[lower.tri(A)] <- t(A)[lower.tri(t(A))]
+A
+B <-as.matrix(matrK) 
+B <-col(B)
+print(B)
+```
+
+### Vahesammude maatriksid A ja B
+
+```{r, message=FALSE, warning=FALSE}
+par(mfrow=c(1,3))
+for(i in 1:6){
+  A <-as.matrix(matrK)
+  A[!row(A)==col(A)] <- 100
+  A[ends(matrG, E(matrG))] <- E(matrG)$weight
+  A[lower.tri(A)] <- t(A)[lower.tri(t(A))]
+  cat('\n','A',i,'=','\n')
+  print(A)
+  B <-as.matrix(matrK) 
+  B <-col(B)
+  cat('\n','B',i,'=','\n')
+  print(B)
+}
+```
+
+### Lühimad teed
+
+* Tipust 1 tippu 2:   1 -> 2        pikkus = 8
+* Tipust 1 tippu 3:   1 -> 3        pikkus = 5
+* Tipust 1 tippu 4:   1 -> 3 -> 4   pikkus = 11
+* Tipust 1 tippu 5:   1 -> 3 -> 5   pikkus = 10
+* Tipust 2 tippu 3:   2 -> 3        pikkus = 7
+* Tipust 2 tippu 4:   2 -> 3 -> 4   pikkus = 13
+* Tipust 2 tippu 5:   2 -> 3 -> 5   pikkus = 12
+* Tipust 3 tippu 4:   3 -> 4        pikkus = 6
+* Tipust 3 tippu 5:   3 -> 5        pikkus = 5
+* Tipust 4 tippu 5:   4 -> 5        pikkus = 1
+
+### Visualiseeritud lühimad teed
+
+```{r, message=FALSE, warning=FALSE}
+par(mfrow=c(1,3))
+for(i in 1:4){
+  for(j in (i+1):5){
+    E(matrG)$color <- "grey"
+    E(matrG)$width <- 1
+    sp <- get.shortest.paths(matrG,V(matrG)[i],V(matrG)[j])$vpath[[1]]
+    plot(matrG, edge.curved=0,edge.color="grey",layout=layout_in_circle,edge.label=E(matrG)$weight,edge.label.cex=1.5,vertex.size=20,edge.arrow.size = 0.5)
+    E(matrG, path=sp)$color <- 'red'
+    plot(matrG,add=TRUE, edge.curved=0,layout=layout_in_circle,vertex.size=20,edge.arrow.size = 0.5)
+    title(paste("tipust",i,"tippu",j))
+  }
+}
+```
+
+# Kasutatud allikad
+
+* Kaalutud graaf: https://stackoverflow.com/questions/33813835/assigning-edge-weight-to-an-igraph-object-in-r
+* Harjutustund 2: https://moodle.taltech.ee/pluginfile.php/453697/mod_resource/content/22/Harj2_2022.html#L%C3%BChima_tee_leidmine_(Floyd-Warshalli_algoritm)

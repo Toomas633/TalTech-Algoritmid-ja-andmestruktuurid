@@ -1,0 +1,314 @@
+---
+title: "ÜLESANNE 1. Graafid"
+
+subtitle: "NTR0390 Algoritmid ja andmestruktuurid. Moodul GRAAFID"
+
+author: "<br>õpilane Toomas Kirsing <br>"
+
+date: "23.09.2022 <br>"
+
+
+output: 
+  html_document:
+    toc: true
+    toc_depth: 3
+    toc_float: 
+      collapsed: true
+    number_sections: false
+    theme: default
+---
+ 
+<br>
+Graafiteooria ülesannete lahendamiseks tarkvara R ja RStudio abil on vaja installida lisapaketid ***igraph*** ja ***network*** ning aktiveerida neid 
+
+```{r, message=FALSE, warning=FALSE}
+library(igraph)
+library(network)
+```
+
+# Orienteeritud graaf
+
+### Graafi moodustamine 
+
+Esitan üliõpilaskoodi (212452) 2nd süsteemis
+
+```{r, message=FALSE, warning=FALSE}
+library(R.utils)
+a <- as.integer(unlist(strsplit(intToBin(212452),split="")))
+```
+
+Sisestan maatriksi ***K*** read ülesandes antud eeskirja järgi
+
+```{r}
+matrK <- rbind(a[1:5],a[6:10],a[c(11:12,1:3)],a[4:8],a[9:13])
+matrK
+```
+
+Moodustan graafi funktsiooni ***graph_from_adjacency_matrix()*** abil ja joonestan funktsiooniga ***plot()***:
+
+```{r, out.width='80%', fig.align='center'}
+g <- graph_from_adjacency_matrix(matrK)
+plot(g,layout=layout_in_circle, edge.curved=0.2,edge.color="black")
+```
+
+### Intsidentsusmaatriks
+
+Orienteeritud graafi intsidentsusmaatriks:
+```{r}
+netw <- as.network.matrix(matrK,mode="directed", loops=TRUE)
+matrI <- as.matrix(netw,matrix.type="incidence", loops=TRUE)
+nodes_loops <- as.matrix(get.edgelist(g))[which_loop(g)==TRUE,1]
+if(is.matrix(matrI[nodes_loops,colSums(abs(matrI))==0])==FALSE){
+  matrI[nodes_loops,colSums(abs(matrI))==0] <- 1
+} else {
+  diag(matrI[nodes_loops,colSums(abs(matrI))==0]) <- 1
+}
+
+matrI 
+```
+
+### Graafi servade ja tippude loendid
+
+Graafi servade loend kasutades funktsiooni ***get.edgelist()***:
+```{r}
+get.edgelist(g, names = 1)
+
+```
+
+Graafi naabrustippude loend funktsioonist ***get.adjlist()***:
+```{r}
+get.adjlist(g,mode = "out")
+
+```
+
+### Graafi tihedus
+
+Definitsiooni järgi orienteeritud graaf on tihe (*dense*) siis, kui servade arv on täisgraafi servade
+arvuga $|V|^2$ lähedasem, ja graaf on hõre (*sparse*) siis, kui servade arv on tippude arvuga $|V|$ lähedasem. 
+
+Antud graafi servade arv:
+```{r}
+gsize(g)
+```
+
+Antud graafi servade arv 19 on rohkem lähedane täisgraafi servade arvuga $|V|^2$ =25, kui tippude arvuga $|V|$ =5, seega antud graaf on tihe.
+
+### Graafi tippude astmed
+
+Orienteeritud graafi tipu väljundastmed:
+```{r}
+degree(g,mode = "out")
+```
+
+Orienteeritud graafi tipu sisendastmed:
+```{r}
+degree(g,mode = "in")
+```
+
+**Loeng 1 Omadus 1:** Orienteeritud graafi korral graafi tippude sisend- ja väljundastmete summad on omavahel võrdsed ning võrduvad graafi servade arvuga:
+```{r}
+sum(degree(g,mode = "out")) # tippude väljundastmete summa
+sum(degree(g,mode = "in")) # tippude sisendastmete summa
+gsize(g) # graafi servade arv
+```
+
+Omadus on kehtiv.
+
+### Isoleeritud ja rippuvad tipud
+
+Orienteeritud graafi korral rippuvate ja isoleeritud tippude leidmiseks alguses lihtsustame graafi, eemaldades graafist kõik silmused.
+```{r, out.width='80%', fig.align='center'}
+g1 <- simplify(g, remove.multiple = TRUE, remove.loops = TRUE,
+  edge.attr.comb = igraph_opt("edge.attr.comb"))
+plot(g1,layout=layout_in_circle, edge.curved=0.2,edge.color="black")
+```
+
+**Isoleeritud tipud:** tipud, millega intsidenseid servi pole (pärast silmuste eemaldamist summaarne aste on 0) on isoleeritud tipud.
+```{r}
+d_all <- degree(g1,mode = "all")
+d_all
+which(d_all==0) #isoleeritud tipud
+```
+
+Antud graafi korral isoleeritud tipud puuduvad
+
+**Rippuvad tipud:** tipud ainult ühe naabertipuga on rippuvad tipud. Rippuva tipu korral, kas korraga sisend- ja väljundastmed on ühed, või sisendaste = 1 ja väljundaste = 0, või sisendaste = 0 ja väljundaste = 1. Kasutame naabertippude loendit, suunda arvestamata (mode = "all") ja kui seos on kahesuunaline, võtame arvesse naabreid ainult ühekorselt 
+```{r}
+neighbour_all=lapply(get.adjlist(g1,mode = "all"), unique)
+neighbour_all
+
+```
+
+siis tippude naabrite arvud:
+```{r}
+neighbour_nmbr=lengths(neighbour_all)
+neighbour_nmbr
+```
+
+
+Kontrollime naabreid: rippuval tipul on ainult üks naaber
+```{r}
+which(neighbour_nmbr==1)
+```
+
+Antud graafil puudub rippuv tipp.
+
+# Orienteerimata graaf
+
+### Graafi moodustamine 
+
+Orienteerimata lihtgraafi korral graafi naabrusmaatriks ***K*** on sümmeetriline ja tema peadiagonaalil on nullid.
+
+```{r, message=FALSE, warning=FALSE}
+library(R.utils)
+a <- as.integer(unlist(strsplit(intToBin(212452),split="")))
+row1 <- c(0,a[1],a[2],a[4],a[7],a[11])
+row2 <- c(a[1],0,a[3],a[5],a[8],a[12])
+row3 <- c(a[2],a[3],0,a[6],a[9],a[13])
+row4 <- c(a[4],a[5],a[6],0,a[10],a[14])
+row5 <- c(a[7],a[8],a[9],a[10],0,a[15])
+row6 <- c(a[11],a[12],a[13],a[14],a[15],0)
+matrK <- rbind(row1,row2,row3,row4,row5,row6)
+matrK
+```
+
+Moodustan graafi funktsiooni ***graph_from_adjacency_matrix()*** abil ja joonestan funktsiooniga ***plot()***:
+
+```{r, out.width='80%', fig.align='center'}
+g <- graph_from_adjacency_matrix(matrK, mode="undirected")
+plot(g,layout=layout_in_circle, edge.color="black")
+```
+
+### Intsidentsusmaatriks
+
+Orienteerimata graafi intsidentsusmaatriks:
+```{r}
+netw <- as.network.matrix(matrK,directed = F, loops=F)
+matrI <- as.matrix(netw,matrix.type="incidence", loops=F)
+
+matrI 
+```
+
+### Graafi servade ja tippude loendid
+
+Graafi servade loend:
+```{r}
+get.edgelist(g, names = 1)
+
+```
+
+Graafi naabrustippude loend:
+```{r}
+get.adjlist(g,mode = "all")
+
+```
+
+### Graafi tihedus
+
+Definitsiooni järgi orienteerimata graaf on tihe (*dense*) siis, kui servade arv on täisgraafi servade
+arvuga $|V|*(|V|-1)/2$ lähedasem, ja graaf on hõre (*sparse*) siis, kui servade arv on tippude arvuga $|V|$ lähedasem. 
+
+Antud graafi servade arv:
+```{r}
+gsize(g)
+```
+
+Antud graafi servade arv 10 on rohkem täisgraafi servade
+arvuga $|V|*(|V|-1)/2$ =10 lähedane, kui tippude arvuga $|V|$ =5, seega antud graaf on tihe.
+
+
+
+### Graafi tippude astmed
+
+Orienteerimata graafi tipu astmed:
+```{r}
+degree(g,mode = "all")
+```
+
+***Loeng 1 Omadus 2:*** Orienteerimata graafi korral tippude astmete summa on kaks korda
+suurem kui graafi servade arv
+```{r}
+sum(degree(g,mode = "all")) # tippude astmete summa
+gsize(g) # graafi servade arv
+```
+
+Omadus kehtib.
+
+### Isoleeritud ja rippuvad tipud
+
+Orienteerimata graafi korral rippuvate ja isoleeritud tippude leidmiseks vaatame graafi tippude astmed, mis näitavad tipuga intsidentsete servade arvu 
+
+```{r}
+degree(g) # näitab iga tipuga intsidentsete servade arvu
+
+```
+
+**Isoleeritud tipud** on tipud, millega itsidenseid servi pole ehk tipu aste on 0. Antud graafis isoleeritud tipud puuduvad:
+```{r}
+which(degree(g)==0) #isoleeritud tipud
+```
+
+Isoleeritud tipud puuduvad
+
+**Rippuvad tipud** on ainult ühe naabertipuga tipud ehk tipu aste on 1. 
+
+Antud graafi korral rippuvad tipud puuduvad:
+```{r}
+which(degree(g,mode = "all")==1)
+```
+
+Rippuvad tipud puuduvad
+
+# Graaf etteantud tippude astmetega
+
+Tippude astmetega 2, 1, 2, 4, 5, 2 graaf eksisteerib ja seda on võimalik joonestada:
+```{r, out.width='80%', fig.align='center'}
+plot(sample_degseq(c( 2, 1, 2, 4, 5, 2),method="vl"),layout=layout_in_circle)
+ 
+```
+
+# Täisgraafi moodustamine
+
+Täisgraafi ***n*** tipul moodustame funktsiooniga ***make_full_graph(n)***:
+
+## a)
+
+### Graaf a+6
+
+a = 2, tippe peab olema 8:
+
+```{r, out.width='80%', fig.align='center'}
+gf <- make_full_graph(8)
+plot(gf)
+```
+
+### Tippude astmed
+
+Antud graafi kõikide tippude astmed on 7: 
+
+```{r}
+degree(gf,mode = "all")
+```
+
+### Servade arv
+
+Antud graafi servade arv on 28:
+
+```{r}
+gsize(gf)
+```
+
+## b)
+
+### Graaf a+b+6
+
+a = 2, b = 5, linnu peab olema 13, teesid peab olema iga vahel 3:
+
+Sellist graafi ei leidu.
+
+# Kasutatud materjal
+
+Õppematerjal moodles. Etteantud vormistuse näidis.
+
+
+
